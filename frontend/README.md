@@ -24,6 +24,8 @@ npm run build
   placeholders.
 - The same model feeds both the HTML preview (`NdaPreview`) and the PDF
   (`NdaPdf`, rendered in the browser with `@react-pdf/renderer`).
+- The PDF embeds Noto Serif and Noto Sans (`public/fonts`, SIL OFL 1.1) so
+  Latin, Greek and Cyrillic names render correctly; CJK is not covered.
 
 Values entered by the user appear on the Cover Page; the Standard Terms refer
 to them as defined terms (e.g. "Purpose", "Governing Law"), as in the Common

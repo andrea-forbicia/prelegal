@@ -32,20 +32,26 @@ export function NdaCreator({ standardTerms }: { standardTerms: StandardTerms }) 
     setError(null);
     try {
       // Loaded on demand: the PDF renderer is large and only needed here.
-      const [{ pdf }, { NdaPdf }] = await Promise.all([
+      const [{ pdf }, { NdaPdf }, { registerPdfFonts }] = await Promise.all([
         import("@react-pdf/renderer"),
         import("./NdaPdf"),
+        import("./pdf-fonts"),
       ]);
+      registerPdfFonts(`${window.location.origin}/fonts`);
       const blob = await pdf(
         <NdaPdf coverPage={coverPage} standardTerms={standardTerms} />,
       ).toBlob();
 
+      // Attach the link and revoke the URL later: some browsers (Safari,
+      // older Firefox) start the download asynchronously after click().
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = pdfFileName(form);
+      document.body.appendChild(link);
       link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 0);
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch (err) {
       console.error(err);
       setError("Could not generate the PDF. Please try again.");

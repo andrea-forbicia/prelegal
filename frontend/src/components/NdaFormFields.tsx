@@ -1,7 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
-import type { NdaForm, Party } from "@/lib/cover-page";
+import { useState, type ReactNode } from "react";
+import { MAX_YEARS, MIN_YEARS, parseYears, type NdaForm, type Party } from "@/lib/cover-page";
 
 type Props = {
   form: NdaForm;
@@ -43,16 +43,32 @@ function YearsInput({
   onChange: (years: number) => void;
   label: string;
 }) {
+  // While editing, keep the raw text so the field can be cleared and retyped;
+  // only valid values reach the form, and blur restores the last valid one.
+  const [draft, setDraft] = useState<string | null>(null);
+  const invalid = draft !== null && parseYears(draft) === null;
+
   return (
     <input
       type="number"
-      min={1}
-      max={99}
+      inputMode="numeric"
+      min={MIN_YEARS}
+      max={MAX_YEARS}
+      step={1}
       aria-label={label}
-      value={value}
+      aria-invalid={invalid}
+      title={`A whole number from ${MIN_YEARS} to ${MAX_YEARS}`}
+      value={draft ?? String(value)}
       disabled={disabled}
-      onChange={(e) => onChange(Math.max(1, Math.floor(Number(e.target.value)) || 1))}
-      className="w-16 rounded-md border border-slate-300 px-2 py-1 text-sm disabled:bg-slate-100 disabled:text-slate-400"
+      onChange={(e) => {
+        setDraft(e.target.value);
+        const years = parseYears(e.target.value);
+        if (years !== null) onChange(years);
+      }}
+      onBlur={() => setDraft(null)}
+      className={`w-16 rounded-md border px-2 py-1 text-sm disabled:bg-slate-100 disabled:text-slate-400 ${
+        invalid ? "border-red-500" : "border-slate-300"
+      }`}
     />
   );
 }

@@ -4,6 +4,7 @@ import {
   defaultNdaForm,
   formatDate,
   formatYears,
+  parseYears,
   pdfFileName,
   type NdaForm,
 } from "./cover-page";
@@ -42,6 +43,20 @@ describe("formatDate", () => {
   it("rejects invalid input", () => {
     expect(formatDate("")).toBeNull();
     expect(formatDate("2026-13-01")).toBeNull();
+  });
+});
+
+describe("parseYears", () => {
+  it("accepts whole numbers from 1 to 99", () => {
+    expect(parseYears("1")).toBe(1);
+    expect(parseYears(" 15 ")).toBe(15);
+    expect(parseYears("99")).toBe(99);
+  });
+
+  it("rejects empty, out-of-range and non-integer input", () => {
+    for (const text of ["", "0", "100", "5000", "2.5", "-3", "1e2", "abc"]) {
+      expect(parseYears(text)).toBeNull();
+    }
   });
 });
 
@@ -110,6 +125,13 @@ describe("buildCoverPage", () => {
     expect(section(form, "Term of Confidentiality").lines[0].value.text).toMatch(
       /^2 years from Effective Date, but in the case of trade secrets/,
     );
+  });
+
+  it("treats empty modifications as a final answer, not a placeholder", () => {
+    expect(section(defaultNdaForm(), "MNDA Modifications").lines[0].value).toEqual({
+      text: "None.",
+      filled: true,
+    });
   });
 
   it("leaves signature and date cells blank for signing", () => {

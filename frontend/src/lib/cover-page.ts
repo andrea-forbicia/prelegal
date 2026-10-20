@@ -89,6 +89,16 @@ export function formatDate(iso: string): string | null {
   return monthName ? `${monthName} ${Number(day)}, ${year}` : null;
 }
 
+export const MIN_YEARS = 1;
+export const MAX_YEARS = 99;
+
+/** Parses a term length typed by the user; `null` unless a whole number in range. */
+export function parseYears(text: string): number | null {
+  if (!/^\d+$/.test(text.trim())) return null;
+  const years = Number(text);
+  return years >= MIN_YEARS && years <= MAX_YEARS ? years : null;
+}
+
 export function formatYears(years: number): string {
   return years === 1 ? "1 year" : `${years} years`;
 }
@@ -158,7 +168,8 @@ export function buildCoverPage(form: NdaForm): CoverPage {
       },
       {
         heading: "MNDA Modifications",
-        lines: [{ value: value(form.modifications, "None.") }],
+        // Leaving this empty is a valid final answer, not a missing value.
+        lines: [{ value: { text: form.modifications.trim() || "None.", filled: true } }],
       },
     ],
     signatureRows: [

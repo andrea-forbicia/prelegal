@@ -7,26 +7,30 @@ import {
   type Value,
 } from "@/lib/cover-page";
 import type { Inline, StandardTerms } from "@/lib/standard-terms";
+import { SANS, SERIF } from "./pdf-fonts";
 
 const styles = StyleSheet.create({
   page: {
     paddingVertical: 48,
     paddingHorizontal: 64,
-    fontFamily: "Times-Roman",
+    fontFamily: SERIF,
+    // Noto's fi/ff ligatures don't map back to text, so copying or searching
+    // the PDF would find "Confdential" instead of "Confidential".
+    fontFeatureSettings: { liga: false },
     fontSize: 10.5,
     lineHeight: 1.45,
   },
   title: {
-    fontFamily: "Times-Bold",
+    fontWeight: "bold",
     fontSize: 18,
     textAlign: "center",
     marginBottom: 14,
   },
   paragraph: { marginBottom: 10 },
   section: { marginBottom: 7 },
-  heading: { fontFamily: "Helvetica-Bold", fontSize: 10.5 },
-  hint: { fontFamily: "Helvetica", fontSize: 8, color: "#64748b", marginBottom: 2 },
-  bold: { fontFamily: "Times-Bold" },
+  heading: { fontFamily: SANS, fontWeight: "bold", fontSize: 10.5 },
+  hint: { fontFamily: SANS, fontWeight: "normal", fontSize: 8, color: "#64748b", marginBottom: 2 },
+  bold: { fontWeight: "bold" },
   link: { color: "#1d4ed8" },
   placeholder: { color: "#b45309" },
   table: { marginTop: 8, borderTopWidth: 1, borderLeftWidth: 1, borderColor: "#94a3b8" },
@@ -38,11 +42,11 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderBottomWidth: 1,
     borderColor: "#94a3b8",
-    fontFamily: "Helvetica",
+    fontFamily: SANS,
     fontSize: 9,
   },
-  labelCell: { flex: 0.8, fontFamily: "Helvetica-Bold" },
-  headerCell: { fontFamily: "Helvetica-Bold", textAlign: "center" },
+  labelCell: { flex: 0.8, fontWeight: "bold" },
+  headerCell: { fontWeight: "bold", textAlign: "center" },
   footer: { marginTop: 8, fontSize: 9, color: "#475569" },
 });
 

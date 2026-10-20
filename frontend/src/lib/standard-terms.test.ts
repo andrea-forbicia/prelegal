@@ -65,4 +65,19 @@ describe("parseStandardTerms", () => {
     ]);
     expect(terms.footer).toEqual([{ kind: "text", text: "Footer" }]);
   });
+
+  it("joins a clause wrapped over several lines", () => {
+    const terms = parseStandardTerms("# Terms\n\n1. **One**. First line\nsecond line.\n\nFooter");
+    expect(terms.clauses[0].body).toEqual([{ kind: "text", text: "First line second line." }]);
+  });
+
+  it("rejects paragraphs it does not recognize instead of dropping them", () => {
+    expect(() =>
+      parseStandardTerms("# Terms\n\n1. **One.** Bold includes the period.\n\nFooter"),
+    ).toThrow(/Unrecognized paragraph/);
+    expect(() =>
+      parseStandardTerms("# Terms\n\n1. **One**. First.\n\nStray text\n\n2. **Two**. Second."),
+    ).toThrow(/Unrecognized paragraph/);
+    expect(() => parseStandardTerms("# Terms\n\nJust text")).toThrow();
+  });
 });
