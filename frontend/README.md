@@ -8,11 +8,15 @@ agreement in a live preview, and downloads it as a PDF.
 
 ```bash
 npm install
-npm run dev     # http://localhost:3000
+npm run dev     # http://localhost:3000, proxies /api to the backend on :8000
 npm test        # unit tests (Vitest)
 npm run lint
-npm run build
+npm run build   # static export to out/, served by the FastAPI backend
 ```
+
+In production the static export is served by the backend from a single Docker
+container; see the [root README](../README.md) for how to run the full app.
+Set `BACKEND_URL` to proxy `npm run dev` to a backend on another address.
 
 ## How it works
 
