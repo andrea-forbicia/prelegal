@@ -5,24 +5,54 @@ from datetime import date
 
 import pytest
 
-from app import llm
-from app.documents import nda
+from app.documents.handlers import get_handler
 
 pytestmark = pytest.mark.skipif(
     os.environ.get("RUN_LIVE_LLM_TESTS") != "1", reason="set RUN_LIVE_LLM_TESTS=1 to call the LLM"
 )
 
+GREETING = {"role": "assistant", "content": "Hi! What would you like to draft?"}
 
-def test_provider_accepts_the_nda_schema():
-    form = nda.NdaForm(parties=[nda.Party(), nda.Party()])
-    messages = [
-        {"role": "system", "content": nda.build_system_prompt(form, date(2026, 10, 21))},
-        {"role": "assistant", "content": "Hi! Who are the two parties?"},
-        {"role": "user", "content": "Acme Inc. e Globex SpA, per valutare una partnership."},
-    ]
 
-    turn = llm.complete_structured(messages, nda.NdaChatTurn)
-    result = nda.apply_updates(form, turn.updates)
+def _chat(client, text: str, document: dict | None = None) -> dict:
+    request = {
+        "messages": [GREETING, {"role": "user", "content": text}],
+        "document": document,
+        "today": "2026-10-21",
+    }
+    response = client.post("/api/chat", json=request)
+    assert response.status_code == 200, response.text
+    return response.json()
 
-    assert turn.reply
-    assert {party.company for party in result.parties} == {"Acme Inc.", "Globex SpA"}
+
+def test_selects_the_nda_and_fills_in_the_parties(client):
+    body = _chat(client, "Mi serve un NDA tra Acme Inc. e Globex SpA, per valutare una partnership.")
+
+    assert body["reply"]
+    assert body["document"]["id"] == "mutual-nda"
+    companies = {party["company"] for party in body["document"]["form"]["parties"]}
+    assert companies == {"Acme Inc.", "Globex SpA"}
+
+
+def test_selects_a_generic_document(client):
+    body = _chat(client, "I sell a SaaS product and need subscription terms for a customer.")
+
+    assert body["document"]["id"] == "csa"
+
+
+def test_unsupported_document_is_declined(client):
+    body = _chat(client, "I need an employment contract for a new engineer.")
+
+    assert body["document"] is None
+    assert body["reply"]
+
+
+def test_fills_in_a_generic_document(client):
+    form = get_handler("pilot").new_form(date(2026, 10, 21))
+    document = {"id": "pilot", "form": form.model_dump(by_alias=True)}
+
+    body = _chat(client, "The pilot runs for 60 days, under Delaware law.", document)
+
+    values = body["document"]["form"]["values"]
+    assert "60" in values["pilot_period"]
+    assert "Delaware" in values["governing_law"]

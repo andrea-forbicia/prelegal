@@ -1,9 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { defaultNdaForm } from "./cover-page";
-import { ChatError, GREETING, MAX_HISTORY, sendNdaChat, type ChatMessage } from "./nda-chat";
+import { ChatError, GREETING, MAX_HISTORY, sendChat, type ChatMessage } from "./chat";
+import { defaultNdaForm, emptyParty } from "./cover-page";
+import type { Draft } from "./documents";
 
-const form = defaultNdaForm("2026-10-21");
-const history: ChatMessage[] = [GREETING, { role: "user", content: "Acme and Globex" }];
+const draft: Draft = { id: "mutual-nda", form: defaultNdaForm("2026-10-21") };
+const pilot: Draft = {
+  id: "pilot",
+  form: { values: { pilot_period: "60 days" }, parties: [emptyParty, emptyParty] },
+};
+const history: ChatMessage[] = [GREETING, { role: "user", content: "An NDA with Globex" }];
 
 function stubFetch(response: Response | Error) {
   const fetchMock = vi.fn<(url: string, init: RequestInit) => Promise<Response>>(async () => {
@@ -30,18 +35,26 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("sendNdaChat", () => {
-  it("posts the conversation, form and date, and returns the turn", async () => {
-    const updated = { ...form, governingLaw: "Delaware" };
-    const fetchMock = stubFetch(jsonResponse({ reply: "Noted.", form: updated }));
+describe("sendChat", () => {
+  it("posts the conversation, draft and date, and returns the turn", async () => {
+    const fetchMock = stubFetch(jsonResponse({ reply: "Switching.", document: pilot }));
 
-    const turn = await sendNdaChat(history, form, "2026-10-21");
+    const turn = await sendChat(history, draft, "2026-10-21");
 
-    expect(turn).toEqual({ reply: "Noted.", form: updated });
+    expect(turn).toEqual({ reply: "Switching.", document: pilot });
     const { url, init, body } = sentBody(fetchMock);
-    expect(url).toBe("/api/chat/nda");
+    expect(url).toBe("/api/chat");
     expect(init.method).toBe("POST");
-    expect(body).toEqual({ messages: history, form, today: "2026-10-21" });
+    expect(body).toEqual({ messages: history, document: draft, today: "2026-10-21" });
+  });
+
+  it("works before a document is chosen", async () => {
+    const fetchMock = stubFetch(jsonResponse({ reply: "Which one?", document: null }));
+
+    const turn = await sendChat(history, null, "2026-10-21");
+
+    expect(turn).toEqual({ reply: "Which one?", document: null });
+    expect(sentBody(fetchMock).body.document).toBeNull();
   });
 
   it(`sends at most the last ${MAX_HISTORY} messages`, async () => {
@@ -49,9 +62,9 @@ describe("sendNdaChat", () => {
       role: i % 2 ? "assistant" : "user",
       content: `message ${i}`,
     }));
-    const fetchMock = stubFetch(jsonResponse({ reply: "Ok", form }));
+    const fetchMock = stubFetch(jsonResponse({ reply: "Ok", document: draft }));
 
-    await sendNdaChat(long, form, "2026-10-21");
+    await sendChat(long, draft, "2026-10-21");
 
     const { body } = sentBody(fetchMock);
     expect(body.messages).toHaveLength(MAX_HISTORY);
@@ -64,24 +77,28 @@ describe("sendNdaChat", () => {
     [500, "Something went wrong. Please try again."],
   ])("maps HTTP %i to a readable error", async (status, message) => {
     stubFetch(jsonResponse({ detail: "internal" }, status));
-    const result = sendNdaChat(history, form, "2026-10-21");
+    const result = sendChat(history, draft, "2026-10-21");
     await expect(result).rejects.toThrow(ChatError);
     await expect(result).rejects.toThrow(message);
   });
 
   it.each([
     ["not JSON", new Response("<html>", { status: 200 })],
-    ["missing reply", jsonResponse({ form })],
-    ["missing form", jsonResponse({ reply: "Hi" })],
-    ["wrong party count", jsonResponse({ reply: "Hi", form: { ...form, parties: [] } })],
+    ["missing reply", jsonResponse({ document: null })],
+    ["missing document", jsonResponse({ reply: "Hi" })],
+    ["document without id", jsonResponse({ reply: "Hi", document: { form: draft.form } })],
+    [
+      "wrong party count",
+      jsonResponse({ reply: "Hi", document: { id: "pilot", form: { values: {}, parties: [] } } }),
+    ],
   ])("rejects a malformed response (%s)", async (_case, response) => {
     stubFetch(response);
-    await expect(sendNdaChat(history, form, "2026-10-21")).rejects.toThrow(ChatError);
+    await expect(sendChat(history, draft, "2026-10-21")).rejects.toThrow(ChatError);
   });
 
   it("reports network failures", async () => {
     stubFetch(new TypeError("Failed to fetch"));
-    await expect(sendNdaChat(history, form, "2026-10-21")).rejects.toThrow(
+    await expect(sendChat(history, draft, "2026-10-21")).rejects.toThrow(
       "Could not reach the server",
     );
   });
@@ -91,13 +108,13 @@ describe("sendNdaChat", () => {
     controller.abort();
     const abort = new DOMException("Aborted", "AbortError");
     stubFetch(abort);
-    await expect(sendNdaChat(history, form, "2026-10-21", controller.signal)).rejects.toBe(abort);
+    await expect(sendChat(history, draft, "2026-10-21", controller.signal)).rejects.toBe(abort);
   });
 });
 
 describe("GREETING", () => {
-  it("is an assistant message", () => {
+  it("is an assistant message that invites the user to choose", () => {
     expect(GREETING.role).toBe("assistant");
-    expect(GREETING.content).toMatch(/Mutual Non-Disclosure Agreement/);
+    expect(GREETING.content).toMatch(/pick a document/);
   });
 });

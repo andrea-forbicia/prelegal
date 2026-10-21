@@ -1,0 +1,316 @@
+{
+  "documents": [
+    {
+      "id": "mutual-nda",
+      "kind": "nda",
+      "name": "Mutual Non-Disclosure Agreement",
+      "template": "Mutual-NDA.md",
+      "summary": "Lets two parties share confidential information with each other while they evaluate or pursue a business relationship.",
+      "useFor": "NDA, confidentiality agreement, sharing confidential information, exploring a deal or partnership"
+    },
+    {
+      "id": "csa",
+      "kind": "generic",
+      "name": "Cloud Service Agreement",
+      "template": "CSA.md",
+      "standardsUrl": "https://commonpaper.com/standards/cloud-service-agreement/3.0/",
+      "summary": "Terms for selling and buying a cloud software or SaaS subscription.",
+      "useFor": "SaaS, cloud software subscription, terms of service, selling or buying hosted software",
+      "partyRoles": ["Provider", "Customer"],
+      "sections": [
+        {
+          "heading": "Order Form",
+          "fields": [
+            { "key": "cloud_service", "label": "Cloud Service", "type": "longtext", "description": "The cloud product or SaaS being sold, e.g. \"Acme Analytics, Enterprise plan\"." },
+            { "key": "order_date", "label": "Order Date", "type": "date", "description": "The date this Order Form starts." },
+            { "key": "subscription_period", "label": "Subscription Period", "type": "text", "description": "How long the subscription lasts, e.g. \"12 months from the Order Date\"." },
+            { "key": "non_renewal_notice_date", "label": "Non-Renewal Notice Date", "type": "text", "description": "Deadline to give notice of non-renewal, e.g. \"30 days before the end of the Subscription Period\"." },
+            { "key": "fees", "label": "Fees", "type": "longtext", "description": "Price and billing, e.g. \"$1,000 per month, billed annually in advance\"." },
+            { "key": "technical_support", "label": "Technical Support", "type": "longtext", "description": "Support the Provider gives, e.g. \"Email support on business days, 9am-5pm ET\".", "optional": true }
+          ]
+        },
+        {
+          "heading": "Key Terms",
+          "fields": [
+            { "key": "effective_date", "label": "Effective Date", "type": "date", "description": "The date the agreement starts." },
+            { "key": "governing_law", "label": "Governing Law", "type": "text", "description": "The jurisdiction whose laws govern, e.g. \"Delaware\"." },
+            { "key": "chosen_courts", "label": "Chosen Courts", "type": "text", "description": "Courts for disputes, e.g. \"the state or federal courts in New Castle County, Delaware\"." },
+            { "key": "general_cap_amount", "label": "General Cap Amount", "type": "text", "description": "Liability cap, e.g. \"the fees paid or payable in the 12 months before the claim\"." },
+            { "key": "provider_covered_claims", "label": "Provider Covered Claims", "type": "longtext", "description": "Third-party claims the Provider indemnifies, e.g. \"claims that the Cloud Service infringes intellectual property rights\".", "optional": true },
+            { "key": "customer_covered_claims", "label": "Customer Covered Claims", "type": "longtext", "description": "Third-party claims the Customer indemnifies, e.g. \"claims arising from Customer Content\".", "optional": true },
+            { "key": "dpa", "label": "DPA", "type": "text", "description": "The data processing agreement between the parties, if any, e.g. \"Common Paper DPA signed on the Effective Date\".", "optional": true }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sla",
+      "kind": "generic",
+      "name": "Service Level Agreement",
+      "template": "SLA.md",
+      "standardsUrl": "https://commonpaper.com/standards/service-level-agreement/2.0/",
+      "summary": "Uptime and support response targets with service credits, used together with a Cloud Service Agreement.",
+      "useFor": "SLA, uptime guarantee, availability, support response times, service credits",
+      "partyRoles": ["Provider", "Customer"],
+      "sections": [
+        {
+          "heading": "Order Form",
+          "fields": [
+            { "key": "subscription_period", "label": "Subscription Period", "type": "text", "description": "The subscription period the SLA covers, e.g. \"12 months from the Order Date\"." },
+            { "key": "target_uptime", "label": "Target Uptime", "type": "text", "description": "Monthly availability target, e.g. \"99.9%\"." },
+            { "key": "target_response_time", "label": "Target Response Time", "type": "text", "description": "Time to acknowledge a support request, e.g. \"4 business hours\"." },
+            { "key": "support_channel", "label": "Support Channel", "type": "text", "description": "Where support requests go, e.g. \"support@provider.com\"." },
+            { "key": "uptime_credit", "label": "Uptime Credit", "type": "text", "description": "Credit when uptime is missed, e.g. \"10% of the monthly fees\"." },
+            { "key": "response_time_credit", "label": "Response Time Credit", "type": "text", "description": "Credit when the response time is missed, e.g. \"5% of the monthly fees\"." },
+            { "key": "scheduled_downtime", "label": "Scheduled Downtime", "type": "text", "description": "Planned maintenance windows excluded from uptime, e.g. \"Sundays 2-4am UTC, with 48 hours' notice\".", "optional": true }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dpa",
+      "kind": "generic",
+      "name": "Data Processing Agreement",
+      "template": "DPA.md",
+      "standardsUrl": "https://commonpaper.com/standards/data-processing-agreement/",
+      "summary": "How a provider processes customer personal data as a processor, including security, subprocessors and international transfers (GDPR).",
+      "useFor": "DPA, GDPR, personal data processing, data protection addendum, subprocessors",
+      "partyRoles": ["Provider", "Customer"],
+      "sections": [
+        {
+          "heading": "Key Terms",
+          "fields": [
+            { "key": "agreement", "label": "Agreement", "type": "text", "description": "The main agreement this DPA supplements, e.g. \"the Cloud Service Agreement dated March 1, 2026\"." },
+            { "key": "nature_and_purpose_of_processing", "label": "Nature and Purpose of Processing", "type": "longtext", "description": "What the Provider does with the personal data and why, e.g. \"hosting and analysing customer usage data to provide the Cloud Service\"." },
+            { "key": "duration_of_processing", "label": "Duration of Processing", "type": "text", "description": "How long data is processed, e.g. \"for the term of the Agreement\"." },
+            { "key": "frequency_of_transfer", "label": "Frequency of Transfer", "type": "text", "description": "How often data is transferred, e.g. \"continuous\"." },
+            { "key": "categories_of_data_subjects", "label": "Categories of Data Subjects", "type": "longtext", "description": "Whose data, e.g. \"Customer's employees and end users\"." },
+            { "key": "categories_of_personal_data", "label": "Categories of Personal Data", "type": "longtext", "description": "What data, e.g. \"names, email addresses, IP addresses\"." },
+            { "key": "special_category_data", "label": "Special Category Data", "type": "text", "description": "Sensitive data processed, e.g. health data, or \"None\".", "optional": true },
+            { "key": "special_category_data_restrictions", "label": "Special Category Data Restrictions or Safeguards", "type": "longtext", "description": "Extra safeguards for special category data.", "optional": true },
+            { "key": "approved_subprocessors", "label": "Approved Subprocessors", "type": "longtext", "description": "Subprocessors the Customer approves, with country and task, e.g. \"Amazon Web Services (USA, hosting)\"." },
+            { "key": "governing_member_state", "label": "Governing Member State", "type": "text", "description": "EU member state whose law governs the Standard Contractual Clauses, e.g. \"Ireland\"." },
+            { "key": "security_policy", "label": "Security Policy", "type": "text", "description": "The Provider's security policy, e.g. a URL or document name." },
+            { "key": "provider_security_contact", "label": "Provider Security Contact", "type": "text", "description": "Who to contact about security incidents, e.g. \"security@provider.com\"." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "psa",
+      "kind": "generic",
+      "name": "Professional Services Agreement",
+      "template": "PSA.md",
+      "standardsUrl": "https://commonpaper.com/standards/professional-services-agreement/",
+      "summary": "Engaging a provider to perform professional services and deliverables under a Statement of Work (SOW).",
+      "useFor": "consulting, professional services, statement of work, SOW, freelance or agency work, implementation services",
+      "partyRoles": ["Provider", "Customer"],
+      "sections": [
+        {
+          "heading": "Key Terms",
+          "fields": [
+            { "key": "effective_date", "label": "Effective Date", "type": "date", "description": "The date the agreement starts." },
+            { "key": "governing_law", "label": "Governing Law", "type": "text", "description": "The jurisdiction whose laws govern, e.g. \"Delaware\"." },
+            { "key": "chosen_courts", "label": "Chosen Courts", "type": "text", "description": "Courts for disputes, e.g. \"the state or federal courts in New Castle County, Delaware\"." },
+            { "key": "general_cap_amount", "label": "General Cap Amount", "type": "text", "description": "Liability cap, e.g. \"the fees paid or payable in the 12 months before the claim\"." },
+            { "key": "increased_claims", "label": "Increased Claims", "type": "longtext", "description": "Claims subject to a higher cap, e.g. \"breach of confidentiality\".", "optional": true },
+            { "key": "increased_cap_amount", "label": "Increased Cap Amount", "type": "text", "description": "The higher cap for Increased Claims, e.g. \"3x the General Cap Amount\".", "optional": true },
+            { "key": "unlimited_claims", "label": "Unlimited Claims", "type": "longtext", "description": "Claims with no liability cap, e.g. \"fraud or wilful misconduct\".", "optional": true },
+            { "key": "provider_covered_claims", "label": "Provider Covered Claims", "type": "longtext", "description": "Third-party claims the Provider indemnifies.", "optional": true },
+            { "key": "customer_covered_claims", "label": "Customer Covered Claims", "type": "longtext", "description": "Third-party claims the Customer indemnifies.", "optional": true },
+            { "key": "additional_warranties", "label": "Additional Warranties", "type": "longtext", "description": "Any extra warranties.", "optional": true },
+            { "key": "dpa", "label": "DPA", "type": "text", "description": "The data processing agreement between the parties, if any.", "optional": true },
+            { "key": "security_policy", "label": "Security Policy", "type": "text", "description": "The Provider's security policy, if any.", "optional": true },
+            { "key": "customer_policies", "label": "Customer Policies", "type": "longtext", "description": "Customer policies the Provider must follow, e.g. an on-site code of conduct.", "optional": true }
+          ]
+        },
+        {
+          "heading": "Statement of Work",
+          "fields": [
+            { "key": "services", "label": "Services", "type": "longtext", "description": "The professional services to be performed." },
+            { "key": "deliverables", "label": "Deliverables", "type": "longtext", "description": "What the Provider hands over, e.g. \"a data migration plan and migrated database\"." },
+            { "key": "sow_term", "label": "SOW Term", "type": "text", "description": "How long the SOW lasts, e.g. \"3 months from the Effective Date\"." },
+            { "key": "fees", "label": "Fees", "type": "longtext", "description": "Price and invoicing, e.g. \"$150 per hour, invoiced monthly\"." },
+            { "key": "payment_period", "label": "Payment Period", "type": "text", "description": "Time to pay invoices, e.g. \"30 days from the invoice date\"." },
+            { "key": "rejection_period", "label": "Rejection Period", "type": "text", "description": "Time the Customer has to reject a Deliverable, e.g. \"10 business days\"." },
+            { "key": "resubmission_period", "label": "Resubmission Period", "type": "text", "description": "Time the Provider has to fix a rejected Deliverable, e.g. \"10 business days\"." },
+            { "key": "time_of_assignment", "label": "Time of Assignment", "type": "text", "description": "When rights in Deliverables pass to the Customer, e.g. \"on payment of the Fees\"." },
+            { "key": "customer_obligations", "label": "Customer Obligations", "type": "longtext", "description": "What the Customer must provide, e.g. \"access to systems and a project contact\".", "optional": true },
+            { "key": "insurance_minimums", "label": "Insurance Minimums", "type": "longtext", "description": "Required insurance coverage, if any.", "optional": true }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "baa",
+      "kind": "generic",
+      "name": "Business Associate Agreement",
+      "template": "BAA.md",
+      "standardsUrl": "https://commonpaper.com/standards/business-associate-agreement/1.0",
+      "summary": "A business associate's HIPAA obligations for using, disclosing and safeguarding protected health information (PHI).",
+      "useFor": "BAA, HIPAA, protected health information, PHI, healthcare data",
+      "partyRoles": ["Provider", "Company"],
+      "sections": [
+        {
+          "heading": "Key Terms",
+          "fields": [
+            { "key": "agreement", "label": "Agreement", "type": "text", "description": "The main agreement under which the Provider handles PHI, e.g. \"the Cloud Service Agreement dated March 1, 2026\"." },
+            { "key": "baa_effective_date", "label": "BAA Effective Date", "type": "date", "description": "The date this BAA starts." },
+            { "key": "breach_notification_period", "label": "Breach Notification Period", "type": "text", "description": "Deadline to report a breach to the Company, e.g. \"5 business days\"." },
+            { "key": "limitations", "label": "Limitations", "type": "longtext", "description": "Restrictions on using PHI, e.g. \"no offshoring of PHI\".", "optional": true }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "design-partner",
+      "kind": "generic",
+      "name": "Design Partner Agreement",
+      "template": "Design-Partner-Agreement.md",
+      "standardsUrl": "https://commonpaper.com/standards/design-partner-agreement/",
+      "summary": "Gives an early design partner access to a product in development in exchange for feedback.",
+      "useFor": "design partner, early access, beta program, product feedback",
+      "partyRoles": ["Provider", "Partner"],
+      "sections": [
+        {
+          "heading": "Key Terms",
+          "fields": [
+            { "key": "product", "label": "Product", "type": "longtext", "description": "The product in development the Partner gets access to." },
+            { "key": "program", "label": "Program", "type": "longtext", "description": "What the Partner does in the design partner program, e.g. \"monthly feedback calls and a survey\"." },
+            { "key": "effective_date", "label": "Effective Date", "type": "date", "description": "The date the agreement starts." },
+            { "key": "term", "label": "Term", "type": "text", "description": "How long the agreement lasts, e.g. \"6 months from the Effective Date\"." },
+            { "key": "fees", "label": "Fees", "type": "text", "description": "Fees the Partner pays, if any.", "optional": true },
+            { "key": "governing_law", "label": "Governing Law", "type": "text", "description": "The jurisdiction whose laws govern, e.g. \"Delaware\"." },
+            { "key": "chosen_courts", "label": "Chosen Courts", "type": "text", "description": "Courts for disputes, e.g. \"the state or federal courts in New Castle County, Delaware\"." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "software-license",
+      "kind": "generic",
+      "name": "Software License Agreement",
+      "template": "Software-License-Agreement.md",
+      "standardsUrl": "https://commonpaper.com/standards/software-license-agreement/1.1",
+      "summary": "Licensing software that the customer installs and runs itself (on-premise), with fees, support and warranties.",
+      "useFor": "software license, on-premise software, self-hosted, installed software, licensing",
+      "partyRoles": ["Provider", "Customer"],
+      "sections": [
+        {
+          "heading": "Order Form",
+          "fields": [
+            { "key": "software", "label": "Software", "type": "longtext", "description": "The software being licensed." },
+            { "key": "order_date", "label": "Order Date", "type": "date", "description": "The date this Order Form starts." },
+            { "key": "subscription_period", "label": "Subscription Period", "type": "text", "description": "How long the license lasts, e.g. \"12 months from the Order Date\"." },
+            { "key": "non_renewal_notice_date", "label": "Non-Renewal Notice Date", "type": "text", "description": "Deadline to give notice of non-renewal, e.g. \"30 days before the end of the Subscription Period\"." },
+            { "key": "permitted_uses", "label": "Permitted Uses", "type": "longtext", "description": "What the Customer may use the Software for, e.g. \"internal business purposes\"." },
+            { "key": "license_limits", "label": "License Limits", "type": "text", "description": "Usage limits, e.g. \"up to 50 named users\"." },
+            { "key": "fees", "label": "Fees", "type": "longtext", "description": "Price, e.g. \"$20,000 per year\"." },
+            { "key": "payment_process", "label": "Payment Process", "type": "text", "description": "How the Customer pays, e.g. \"annual invoice, payable within 30 days\"." },
+            { "key": "warranty_period", "label": "Warranty Period", "type": "text", "description": "How long the software warranty lasts, e.g. \"90 days from delivery\"." },
+            { "key": "deletion_procedure", "label": "Deletion Procedure", "type": "text", "description": "How the Customer removes the Software at the end, e.g. \"uninstall and certify deletion within 30 days\"." }
+          ]
+        },
+        {
+          "heading": "Key Terms",
+          "fields": [
+            { "key": "effective_date", "label": "Effective Date", "type": "date", "description": "The date the agreement starts." },
+            { "key": "governing_law", "label": "Governing Law", "type": "text", "description": "The jurisdiction whose laws govern, e.g. \"Delaware\"." },
+            { "key": "chosen_courts", "label": "Chosen Courts", "type": "text", "description": "Courts for disputes, e.g. \"the state or federal courts in New Castle County, Delaware\"." },
+            { "key": "general_cap_amount", "label": "General Cap Amount", "type": "text", "description": "Liability cap, e.g. \"the fees paid or payable in the 12 months before the claim\"." },
+            { "key": "increased_claims", "label": "Increased Claims", "type": "longtext", "description": "Claims subject to a higher cap.", "optional": true },
+            { "key": "increased_cap_amount", "label": "Increased Cap Amount", "type": "text", "description": "The higher cap for Increased Claims.", "optional": true },
+            { "key": "unlimited_claims", "label": "Unlimited Claims", "type": "longtext", "description": "Claims with no liability cap.", "optional": true },
+            { "key": "provider_covered_claims", "label": "Provider Covered Claims", "type": "longtext", "description": "Third-party claims the Provider indemnifies.", "optional": true },
+            { "key": "customer_covered_claims", "label": "Customer Covered Claims", "type": "longtext", "description": "Third-party claims the Customer indemnifies.", "optional": true },
+            { "key": "additional_warranties", "label": "Additional Warranties", "type": "longtext", "description": "Any extra warranties.", "optional": true }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "partnership",
+      "kind": "generic",
+      "name": "Partnership Agreement",
+      "template": "Partnership-Agreement.md",
+      "standardsUrl": "https://commonpaper.com/standards/partnership-agreement/1.0",
+      "summary": "A business partnership where each party performs agreed obligations, with fees, a mutual trademark license and an escalation procedure.",
+      "useFor": "partnership, reseller, referral, co-marketing, channel partner, business collaboration",
+      "partyRoles": ["Company", "Partner"],
+      "sections": [
+        {
+          "heading": "Business Terms",
+          "fields": [
+            { "key": "obligations", "label": "Obligations", "type": "longtext", "description": "What each party will do, e.g. \"Partner refers customers; Company pays a 20% referral fee\"." },
+            { "key": "payment_process", "label": "Payment Process", "type": "text", "description": "How fees are billed, if any money changes hands.", "optional": true },
+            { "key": "payment_schedule", "label": "Payment Schedule", "type": "text", "description": "When fees are paid, e.g. \"quarterly, within 30 days of quarter end\".", "optional": true },
+            { "key": "territory", "label": "Territory", "type": "text", "description": "Where the trademark license applies, e.g. \"United States and Canada\"." },
+            { "key": "end_date", "label": "End Date", "type": "text", "description": "When the agreement ends, e.g. \"2 years after the Effective Date\"." }
+          ]
+        },
+        {
+          "heading": "Key Terms",
+          "fields": [
+            { "key": "effective_date", "label": "Effective Date", "type": "date", "description": "The date the agreement starts." },
+            { "key": "governing_law", "label": "Governing Law", "type": "text", "description": "The jurisdiction whose laws govern, e.g. \"Delaware\"." },
+            { "key": "chosen_courts", "label": "Chosen Courts", "type": "text", "description": "Courts for disputes, e.g. \"the state or federal courts in New Castle County, Delaware\"." },
+            { "key": "general_cap_amount", "label": "General Cap Amount", "type": "text", "description": "Liability cap, e.g. \"$100,000\"." },
+            { "key": "increased_claims", "label": "Increased Claims", "type": "longtext", "description": "Claims subject to a higher cap.", "optional": true },
+            { "key": "increased_cap_amount", "label": "Increased Cap Amount", "type": "text", "description": "The higher cap for Increased Claims.", "optional": true },
+            { "key": "unlimited_claims", "label": "Unlimited Claims", "type": "longtext", "description": "Claims with no liability cap.", "optional": true },
+            { "key": "company_covered_claims", "label": "Company Covered Claims", "type": "longtext", "description": "Third-party claims the Company indemnifies.", "optional": true },
+            { "key": "partner_covered_claims", "label": "Partner Covered Claims", "type": "longtext", "description": "Third-party claims the Partner indemnifies.", "optional": true },
+            { "key": "additional_warranties", "label": "Additional Warranties", "type": "longtext", "description": "Any extra warranties.", "optional": true },
+            { "key": "brand_guidelines", "label": "Brand Guidelines", "type": "text", "description": "Rules for using each other's trademarks, e.g. a URL.", "optional": true },
+            { "key": "dpa", "label": "DPA", "type": "text", "description": "The data processing agreement between the parties, if any.", "optional": true }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pilot",
+      "kind": "generic",
+      "name": "Pilot Agreement",
+      "template": "Pilot-Agreement.md",
+      "standardsUrl": "https://commonpaper.com/standards/pilot-agreement/1.1",
+      "summary": "A short-term trial that lets a prospective customer evaluate a product before a full commercial agreement.",
+      "useFor": "pilot, trial, proof of concept, POC, evaluation, free trial",
+      "partyRoles": ["Provider", "Customer"],
+      "sections": [
+        {
+          "heading": "Order Form",
+          "fields": [
+            { "key": "product", "label": "Product", "type": "longtext", "description": "The product the Customer evaluates." },
+            { "key": "effective_date", "label": "Effective Date", "type": "date", "description": "The date the pilot agreement starts." },
+            { "key": "pilot_period", "label": "Pilot Period", "type": "text", "description": "How long the pilot lasts, e.g. \"60 days from the Effective Date\"." },
+            { "key": "general_cap_amount", "label": "General Cap Amount", "type": "text", "description": "Liability cap, e.g. \"$10,000\"." },
+            { "key": "governing_law", "label": "Governing Law", "type": "text", "description": "The jurisdiction whose laws govern, e.g. \"Delaware\"." },
+            { "key": "chosen_courts", "label": "Chosen Courts", "type": "text", "description": "Courts for disputes, e.g. \"the state or federal courts in New Castle County, Delaware\"." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ai-addendum",
+      "kind": "generic",
+      "name": "AI Addendum",
+      "template": "AI-Addendum.md",
+      "standardsUrl": "https://commonpaper.com/standards/ai-addendum/1.0/",
+      "summary": "Adds AI-specific terms to a commercial agreement: inputs, outputs, model training and related responsibilities.",
+      "useFor": "AI, artificial intelligence, machine learning, model training on customer data, AI features",
+      "partyRoles": ["Provider", "Customer"],
+      "sections": [
+        {
+          "heading": "Key Terms",
+          "fields": [
+            { "key": "agreement", "label": "Agreement", "type": "text", "description": "The commercial agreement this addendum supplements, e.g. \"the Cloud Service Agreement dated March 1, 2026\"." },
+            { "key": "training_data", "label": "Training Data", "type": "longtext", "description": "Customer data the Provider may use to train models. Leave empty if no training is allowed.", "optional": true },
+            { "key": "training_purposes", "label": "Training Purposes", "type": "longtext", "description": "What training is allowed for, e.g. \"improving the Provider's spam filter\". Leave empty if no training is allowed.", "optional": true },
+            { "key": "training_restrictions", "label": "Training Restrictions", "type": "longtext", "description": "Limits on training, e.g. \"data must be anonymised first\".", "optional": true },
+            { "key": "improvement_restrictions", "label": "Improvement Restrictions", "type": "longtext", "description": "Limits on using inputs and outputs to improve the AI system.", "optional": true }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,30 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import { todayIso, type NdaForm } from "@/lib/cover-page";
-import {
-  ChatError,
-  GREETING,
-  MAX_MESSAGE_LENGTH,
-  sendNdaChat,
-  type ChatMessage,
-} from "@/lib/nda-chat";
+import { MAX_MESSAGE_LENGTH, type ChatMessage } from "@/lib/chat";
 
 type Props = {
-  form: NdaForm;
-  onFormChange: (form: NdaForm) => void;
+  messages: ChatMessage[];
+  pending: boolean;
+  error: string | null;
+  /** Sends a message; resolves to false when it failed, so the text is put back. */
+  onSend: (text: string) => Promise<boolean>;
 };
 
-export function NdaChat({ form, onFormChange }: Props) {
-  const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
+export function DocumentChat({ messages, pending, error, onSend }: Props) {
   const [input, setInput] = useState("");
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
-  const requestRef = useRef<AbortController | null>(null);
-
-  // Abort an in-flight turn when the chat unmounts.
-  useEffect(() => () => requestRef.current?.abort(), []);
 
   // Keep the latest message in view.
   useEffect(() => {
@@ -34,28 +23,9 @@ export function NdaChat({ form, onFormChange }: Props) {
   async function send() {
     const text = input.trim();
     if (!text || pending) return;
-
-    const history: ChatMessage[] = [...messages, { role: "user", content: text }];
-    const controller = new AbortController();
-    requestRef.current = controller;
-    setMessages(history);
     setInput("");
-    setPending(true);
-    setError(null);
-    try {
-      const turn = await sendNdaChat(history, form, todayIso(), controller.signal);
-      setMessages([...history, { role: "assistant", content: turn.reply }]);
-      onFormChange(turn.form);
-    } catch (err) {
-      if (controller.signal.aborted) return;
-      console.error(err);
-      // Put the message back so the user can retry without retyping it.
-      setMessages(messages);
-      setInput(text);
-      setError(err instanceof ChatError ? err.message : "Something went wrong. Please try again.");
-    } finally {
-      setPending(false);
-    }
+    // Put the message back so the user can retry without retyping it.
+    if (!(await onSend(text))) setInput(text);
   }
 
   function handleSubmit(event: FormEvent) {
