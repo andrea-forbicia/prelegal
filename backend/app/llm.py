@@ -61,7 +61,11 @@ def complete_structured(messages: list[dict], response_model: type[T]) -> T:
         retry = [
             *messages,
             {"role": "assistant", "content": content or ""},
-            {"role": "user", "content": "Reply again with only the JSON object described above."},
+            {
+                "role": "user",
+                "content": "That was not the JSON object described in the system prompt. Answer my "
+                "previous message again, in the same language, as only that JSON object.",
+            },
         ]
         content = _complete(retry, response_format=response_model)
     try:

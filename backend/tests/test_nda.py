@@ -82,13 +82,29 @@ def test_party_updates_merge_field_by_field():
     assert result.parties[1] == nda.Party(company="Globex", name="Hank")
 
 
+def test_date_parts_become_an_iso_date():
+    form = _form(effectiveDate="2026-10-21")
+
+    result = nda.apply_updates(form, _updates(effective_date=nda.DateParts(year=2026, month=12, day=1)))
+
+    assert result.effective_date == "2026-12-01"
+
+
+def test_prompt_shows_the_date_as_parts():
+    with_date = nda.build_system_prompt(_form(effectiveDate="2026-12-01"), date(2026, 10, 21))
+    without_date = nda.build_system_prompt(_form(), date(2026, 10, 21))
+
+    assert '"effective_date": {\n    "year": 2026,\n    "month": 12,\n    "day": 1\n  }' in with_date
+    assert '"effective_date": null' in without_date
+
+
 def test_invalid_updates_are_dropped_and_valid_ones_kept():
     form = _form(effectiveDate="2026-10-21", mndaTermYears=2)
 
     result = nda.apply_updates(
         form,
         _updates(
-            effective_date="2026-13-45",
+            effective_date=nda.DateParts(year=2026, month=2, day=31),
             mnda_term_years=150,
             confidentiality_years=0,
             jurisdiction="New Castle, DE",
@@ -115,7 +131,7 @@ def test_system_prompt_contains_date_and_form():
 
     prompt = nda.build_system_prompt(form, date(2026, 10, 21))
 
-    assert "Today is 2026-10-21." in prompt
+    assert "Today is Wednesday, 2026-10-21." in prompt
     assert "whole number from 1 to 99" in prompt
     assert '"purpose": "Use {braces} and \\"quotes\\""' in prompt
     assert '"company": "Acme $today"' in prompt  # user text is not substituted

@@ -51,6 +51,28 @@ class NdaForm(_CamelModel):
         return value
 
 
+class DateParts(BaseModel):
+    """A date as named parts: the LLM swaps day and month less often than in a string."""
+
+    year: int
+    month: int
+    day: int
+
+    @classmethod
+    def from_iso(cls, value: str) -> "DateParts | None":
+        if not value:
+            return None
+        parsed = date.fromisoformat(value)
+        return cls(year=parsed.year, month=parsed.month, day=parsed.day)
+
+    def to_iso(self) -> str | None:
+        """``None`` for an impossible date such as February 31."""
+        try:
+            return date(self.year, self.month, self.day).isoformat()
+        except ValueError:
+            return None
+
+
 class PartyUpdates(BaseModel):
     company: str | None
     name: str | None
@@ -66,7 +88,7 @@ class NdaUpdates(BaseModel):
     """
 
     purpose: str | None
-    effective_date: str | None
+    effective_date: DateParts | None
     mnda_term: Literal["expires", "untilTerminated"] | None
     mnda_term_years: int | None
     confidentiality_term: Literal["years", "perpetual"] | None
@@ -101,7 +123,10 @@ def apply_updates(form: NdaForm, updates: NdaUpdates) -> NdaForm:
         except ValidationError:
             target[key] = previous
 
-    for key, value in updates.model_dump(exclude={"party1", "party2"}).items():
+    values = updates.model_dump(exclude={"party1", "party2"})
+    if updates.effective_date is not None:
+        values["effective_date"] = updates.effective_date.to_iso()
+    for key, value in values.items():
         if value is not None:
             try_set(data, key, value)
     for party, party_updates in zip(data["parties"], (updates.party1, updates.party2)):
@@ -122,7 +147,10 @@ Today is $today.
 
 # Fields
 - purpose: how Confidential Information may be used.
-- effective_date: ISO date YYYY-MM-DD. Resolve relative dates such as "today" or "next Monday" from today's date.
+- effective_date: the date the MNDA starts, as {"year", "month", "day"}. Resolve relative dates \
+such as "today" or "next Monday" from today's date; a date without a year is the next one on \
+or after today. Read numeric dates such as 1/12/2026 as \
+day/month/year, unless the user writes in US English; if a date is ambiguous, ask.
 - mnda_term: "expires" (the MNDA ends mnda_term_years after the Effective Date) or "untilTerminated".
 - mnda_term_years: whole number from $min_years to $max_years; only meaningful when mnda_term is "expires".
 - confidentiality_term: "years" (protected for confidentiality_years after the Effective Date) or "perpetual".
@@ -134,7 +162,7 @@ Today is $today.
 notice_address (an email or postal address for legal notices).
 
 # Current form
-This is the current state of the agreement. Empty strings are not filled in yet.
+This is the current state of the agreement. Empty strings and null are not filled in yet.
 <form>
 $form_json
 </form>
@@ -148,7 +176,8 @@ needed (job titles too, e.g. "amministratore delegato" becomes "Chief Executive 
 but keep proper nouns (companies, people, addresses) exactly as the user wrote them.
 - Ask about one or two missing fields at a time, starting with the parties and the purpose. \
 For the terms, suggest the current values as sensible defaults instead of asking open questions.
-- Briefly confirm what you filled in. When every field is filled, summarise the key terms and \
+- Briefly confirm what you filled in. Every value your reply says you filled in must also be \
+set in updates, even if the user gave it in an earlier message. When every field is filled, summarise the key terms and \
 tell the user they can review the preview and download the PDF.
 - Only the Mutual NDA is available for now: if the user asks for another document, say so \
 politely and steer back to the NDA. Do not give legal advice; you are not a lawyer.
@@ -159,7 +188,7 @@ politely and steer back to the NDA. Do not give legal advice; you are not a lawy
 def build_system_prompt(form: NdaForm, today: date) -> str:
     # A Template rather than str.format: the form JSON contains braces.
     return SYSTEM_PROMPT.substitute(
-        today=today.isoformat(),
+        today=f"{today:%A}, {today.isoformat()}",  # The weekday helps with "next Monday".
         min_years=MIN_YEARS,
         max_years=MAX_YEARS,
         form_json=json.dumps(_prompt_view(form), indent=2, ensure_ascii=False),
@@ -169,5 +198,7 @@ def build_system_prompt(form: NdaForm, today: date) -> str:
 def _prompt_view(form: NdaForm) -> dict:
     """The form with the same field names the LLM uses in ``NdaUpdates``."""
     data = form.model_dump(exclude={"parties"})
+    parts = DateParts.from_iso(form.effective_date)
+    data["effective_date"] = parts.model_dump() if parts else None
     data["party1"], data["party2"] = (party.model_dump() for party in form.parties)
     return data

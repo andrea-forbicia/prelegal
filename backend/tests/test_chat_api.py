@@ -61,7 +61,7 @@ def test_llm_receives_system_prompt_then_history(client, fake_llm):
     assert call["response_format"] is nda.NdaChatTurn
     system, *history = call["messages"]
     assert system["role"] == "system"
-    assert "Today is 2026-10-21." in system["content"]
+    assert "Today is Wednesday, 2026-10-21." in system["content"]
     assert '"governing_law": "Delaware"' in system["content"]
     assert history == request["messages"]
 
