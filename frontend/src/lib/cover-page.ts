@@ -75,6 +75,12 @@ export function defaultNdaForm(effectiveDate = ""): NdaForm {
   };
 }
 
+/** The user's local date as `YYYY-MM-DD`. */
+export function todayIso(now = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
@@ -89,15 +95,6 @@ export function formatDate(iso: string): string | null {
   return monthName ? `${monthName} ${Number(day)}, ${year}` : null;
 }
 
-export const MIN_YEARS = 1;
-export const MAX_YEARS = 99;
-
-/** Parses a term length typed by the user; `null` unless a whole number in range. */
-export function parseYears(text: string): number | null {
-  if (!/^\d+$/.test(text.trim())) return null;
-  const years = Number(text);
-  return years >= MIN_YEARS && years <= MAX_YEARS ? years : null;
-}
 
 export function formatYears(years: number): string {
   return years === 1 ? "1 year" : `${years} years`;

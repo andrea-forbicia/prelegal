@@ -1,6 +1,8 @@
 import sqlite3
 from collections.abc import Iterator
+from types import SimpleNamespace
 
+import litellm
 import pytest
 from fastapi.testclient import TestClient
 
@@ -45,3 +47,29 @@ def credentials() -> dict[str, str]:
 def signed_up_client(client, credentials) -> TestClient:
     assert client.post("/api/auth/signup", json=credentials).status_code == 201
     return client
+
+
+class FakeLLM:
+    """Stands in for ``litellm.completion`` and records each call's kwargs.
+
+    Returns ``replies`` in order, repeating the last one, or raises ``error``.
+    """
+
+    def __init__(self) -> None:
+        self.calls: list[dict] = []
+        self.replies: list[str | None] = [None]
+        self.error: Exception | None = None
+
+    def __call__(self, **kwargs):
+        self.calls.append(kwargs)
+        if self.error:
+            raise self.error
+        content = self.replies.pop(0) if len(self.replies) > 1 else self.replies[0]
+        return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=content))])
+
+
+@pytest.fixture
+def fake_llm(monkeypatch) -> FakeLLM:
+    fake = FakeLLM()
+    monkeypatch.setattr(litellm, "completion", fake)
+    return fake

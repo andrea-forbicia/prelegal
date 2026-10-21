@@ -4,8 +4,8 @@ import {
   defaultNdaForm,
   formatDate,
   formatYears,
-  parseYears,
   pdfFileName,
+  todayIso,
   type NdaForm,
 } from "./cover-page";
 
@@ -34,6 +34,12 @@ function section(form: NdaForm, heading: string) {
   return found;
 }
 
+describe("todayIso", () => {
+  it("formats the local date with zero padding", () => {
+    expect(todayIso(new Date(2026, 0, 5, 23, 59))).toBe("2026-01-05");
+  });
+});
+
 describe("formatDate", () => {
   it("formats ISO dates without timezone shifts", () => {
     expect(formatDate("2026-01-01")).toBe("January 1, 2026");
@@ -43,20 +49,6 @@ describe("formatDate", () => {
   it("rejects invalid input", () => {
     expect(formatDate("")).toBeNull();
     expect(formatDate("2026-13-01")).toBeNull();
-  });
-});
-
-describe("parseYears", () => {
-  it("accepts whole numbers from 1 to 99", () => {
-    expect(parseYears("1")).toBe(1);
-    expect(parseYears(" 15 ")).toBe(15);
-    expect(parseYears("99")).toBe(99);
-  });
-
-  it("rejects empty, out-of-range and non-integer input", () => {
-    for (const text of ["", "0", "100", "5000", "2.5", "-3", "1e2", "abc"]) {
-      expect(parseYears(text)).toBeNull();
-    }
   });
 });
 
