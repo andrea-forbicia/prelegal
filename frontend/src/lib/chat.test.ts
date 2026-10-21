@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { setUnauthorizedHandler } from "./api";
 import { ChatError, GREETING, MAX_HISTORY, sendChat, type ChatMessage } from "./chat";
 import { defaultNdaForm, emptyParty } from "./cover-page";
 import type { Draft } from "./documents";
@@ -69,6 +70,16 @@ describe("sendChat", () => {
     const { body } = sentBody(fetchMock);
     expect(body.messages).toHaveLength(MAX_HISTORY);
     expect(body.messages.at(-1)).toEqual(long.at(-1));
+  });
+
+  it("reports an expired session to the unauthorized handler", async () => {
+    const handler = vi.fn();
+    setUnauthorizedHandler(handler);
+    stubFetch(jsonResponse({ detail: "Not authenticated" }, 401));
+
+    await expect(sendChat(history, draft, "2026-10-21")).rejects.toThrow("Your session has expired");
+    expect(handler).toHaveBeenCalledOnce();
+    setUnauthorizedHandler(null);
   });
 
   it.each([

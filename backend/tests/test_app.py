@@ -49,6 +49,7 @@ def test_settings_from_env(monkeypatch, tmp_path):
     monkeypatch.setenv("STATIC_DIR", str(tmp_path / "static"))
     monkeypatch.setenv("SESSION_TTL_HOURS", "2")
     monkeypatch.setenv("COOKIE_SECURE", "true")
+    monkeypatch.setenv("ALLOWED_ORIGINS", "https://a.example/, https://b.example")
 
     settings = Settings.from_env()
 
@@ -56,3 +57,4 @@ def test_settings_from_env(monkeypatch, tmp_path):
     assert settings.static_dir == tmp_path / "static"
     assert settings.session_ttl_hours == 2
     assert settings.cookie_secure is True
+    assert settings.allowed_origins == {"https://a.example", "https://b.example"}

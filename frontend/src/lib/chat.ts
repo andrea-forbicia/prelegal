@@ -5,6 +5,7 @@
  * and the updated draft, which may be a different document after a switch.
  */
 
+import { notifyUnauthorized } from "./api";
 import type { Draft } from "./documents";
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -28,6 +29,7 @@ export const MAX_MESSAGE_LENGTH = 4000;
 export class ChatError extends Error {}
 
 function errorMessage(status: number): string {
+  if (status === 401) return "Your session has expired. Please sign in again.";
   if (status === 502) return "The assistant is unavailable right now. Please try again.";
   if (status === 422) return "That message could not be sent. Please try a shorter one.";
   return "Something went wrong. Please try again.";
@@ -65,7 +67,10 @@ export async function sendChat(
     if (signal?.aborted) throw err;
     throw new ChatError("Could not reach the server. Check your connection and try again.");
   }
-  if (!response.ok) throw new ChatError(errorMessage(response.status));
+  if (!response.ok) {
+    if (response.status === 401) notifyUnauthorized();
+    throw new ChatError(errorMessage(response.status));
+  }
 
   const body: unknown = await response.json().catch(() => null);
   if (!isChatTurn(body)) throw new ChatError(errorMessage(response.status));

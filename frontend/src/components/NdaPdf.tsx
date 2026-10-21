@@ -7,11 +7,14 @@ import {
   type Value,
 } from "@/lib/cover-page";
 import type { Inline, StandardTerms } from "@/lib/standard-terms";
+import { DISCLAIMER } from "@/lib/disclaimer";
 import { SANS, SERIF } from "./pdf-fonts";
 
 const styles = StyleSheet.create({
   page: {
-    paddingVertical: 48,
+    paddingTop: 48,
+    // Room for the disclaimer at the foot of every page.
+    paddingBottom: 64,
     paddingHorizontal: 64,
     fontFamily: SERIF,
     // Noto's fi/ff ligatures don't map back to text, so copying or searching
@@ -48,6 +51,16 @@ const styles = StyleSheet.create({
   labelCell: { flex: 0.8, fontWeight: "bold" },
   headerCell: { fontWeight: "bold", textAlign: "center" },
   footer: { marginTop: 8, fontSize: 9, color: "#475569" },
+  disclaimer: {
+    position: "absolute",
+    bottom: 24,
+    left: 64,
+    right: 64,
+    fontFamily: SANS,
+    fontSize: 7.5,
+    color: "#64748b",
+    textAlign: "center",
+  },
 });
 
 function InlineText({ parts }: { parts: Inline[] }) {
@@ -79,6 +92,9 @@ export function NdaPdf({
   return (
     <Document title={COVER_PAGE_TITLE} creator="Prelegal" producer="Prelegal">
       <Page size="LETTER" style={styles.page}>
+        <Text fixed style={styles.disclaimer}>
+          {DISCLAIMER}
+        </Text>
         <Text style={styles.title}>{COVER_PAGE_TITLE}</Text>
         <Text style={styles.paragraph}>
           <InlineText parts={COVER_PAGE_INTRO} />
@@ -124,6 +140,9 @@ export function NdaPdf({
       </Page>
 
       <Page size="LETTER" style={styles.page}>
+        <Text fixed style={styles.disclaimer}>
+          {DISCLAIMER}
+        </Text>
         <Text style={styles.title}>{standardTerms.title}</Text>
         {standardTerms.clauses.map((clause) => (
           <Text key={clause.number} style={styles.paragraph}>

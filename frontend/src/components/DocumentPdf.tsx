@@ -2,12 +2,15 @@ import { Document, Link, Page, StyleSheet, Text, View } from "@react-pdf/rendere
 import type { Value } from "@/lib/cover-page";
 import type { GenericCoverPage } from "@/lib/generic-cover-page";
 import type { Run, TermNode, TermsDoc } from "@/lib/terms-parser";
+import { DISCLAIMER } from "@/lib/disclaimer";
 import { SANS, SERIF } from "./pdf-fonts";
 
 // Mirrors the styles of NdaPdf so every document looks the same.
 const styles = StyleSheet.create({
   page: {
-    paddingVertical: 48,
+    paddingTop: 48,
+    // Room for the disclaimer at the foot of every page.
+    paddingBottom: 64,
     paddingHorizontal: 64,
     fontFamily: SERIF,
     // Noto's fi/ff ligatures don't map back to text, so copying or searching
@@ -47,6 +50,16 @@ const styles = StyleSheet.create({
   labelCell: { flex: 0.8, fontWeight: "bold" },
   headerCell: { fontWeight: "bold", textAlign: "center" },
   footer: { marginTop: 8, fontSize: 9, color: "#475569" },
+  disclaimer: {
+    position: "absolute",
+    bottom: 24,
+    left: 64,
+    right: 64,
+    fontFamily: SANS,
+    fontSize: 7.5,
+    color: "#64748b",
+    textAlign: "center",
+  },
 });
 
 function RunText({ runs }: { runs: Run[] }) {
@@ -111,6 +124,9 @@ export function DocumentPdf({
   return (
     <Document title={coverPage.title} creator="Prelegal" producer="Prelegal">
       <Page size="LETTER" style={styles.page}>
+        <Text fixed style={styles.disclaimer}>
+          {DISCLAIMER}
+        </Text>
         <Text style={styles.title}>{coverPage.title}</Text>
         <Text style={styles.paragraph}>
           <RunText runs={coverPage.intro} />
@@ -160,6 +176,9 @@ export function DocumentPdf({
       </Page>
 
       <Page size="LETTER" style={styles.page}>
+        <Text fixed style={styles.disclaimer}>
+          {DISCLAIMER}
+        </Text>
         <Text style={styles.title}>{terms.title} Standard Terms</Text>
         <Clauses nodes={terms.sections} depth={0} />
         <Text style={styles.footer}>

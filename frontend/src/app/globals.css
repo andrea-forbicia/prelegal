@@ -3,3 +3,21 @@
 @theme inline {
   --font-sans: var(--font-geist-sans);
 }
+
+/* The Prelegal palette (CLAUDE.md), as Tailwind colors: bg-brand-navy, text-brand-gray, ... */
+@theme {
+  --color-brand-accent: #ecad0a;
+  --color-brand-primary: #209dd7;
+  --color-brand-primary-dark: #1a7fb0;
+  --color-brand-secondary: #753991;
+  --color-brand-secondary-dark: #5f2e76;
+  --color-brand-navy: #032147;
+  --color-brand-gray: #888888;
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-brand-primary);
+    outline-offset: 2px;
+  }
+}

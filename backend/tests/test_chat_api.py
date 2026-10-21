@@ -11,6 +11,11 @@ NULL_PARTY = {"company": None, "name": None, "title": None, "notice_address": No
 EMPTY_PARTY = {"company": "", "name": "", "title": "", "noticeAddress": ""}
 
 
+@pytest.fixture(autouse=True)
+def _signed_in(signed_up_client):
+    """The chat is for signed-in users: sign up on the test's ``client`` first."""
+
+
 def _nda_form(**overrides) -> dict:
     return nda.NdaForm(parties=[nda.Party(), nda.Party()]).model_dump(by_alias=True) | overrides
 
@@ -257,10 +262,13 @@ def test_invalid_requests_are_rejected(client, fake_llm, overrides):
     assert fake_llm.calls == []
 
 
-def test_chat_does_not_require_sign_in(client, fake_llm):
-    fake_llm.replies = [_select("Hello")]
-    assert "session" not in client.cookies
-    assert client.post("/api/chat", json=_request()).status_code == 200
+def test_chat_requires_sign_in(client, fake_llm):
+    client.cookies.clear()
+
+    response = client.post("/api/chat", json=_request())
+
+    assert response.status_code == 401
+    assert fake_llm.calls == []
 
 
 @pytest.mark.parametrize("path", ["/api/chat/nda", "/api/chat/unknown"])
