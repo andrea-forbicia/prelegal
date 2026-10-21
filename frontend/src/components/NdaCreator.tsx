@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { buildCoverPage, defaultNdaForm, pdfFileName, type NdaForm } from "@/lib/cover-page";
+import {
+  buildCoverPage,
+  defaultNdaForm,
+  pdfFileName,
+  todayIso,
+  type NdaForm,
+} from "@/lib/cover-page";
 import type { StandardTerms } from "@/lib/standard-terms";
-import { NdaFormFields } from "./NdaFormFields";
+import { NdaChat } from "./NdaChat";
 import { NdaPreview } from "./NdaPreview";
-
-function todayIso(): string {
-  const now = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-}
 
 export function NdaCreator({ standardTerms }: { standardTerms: StandardTerms }) {
   const [form, setForm] = useState<NdaForm>(() => defaultNdaForm());
@@ -65,9 +65,9 @@ export function NdaCreator({ standardTerms }: { standardTerms: StandardTerms }) 
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <div>
-            <h1 className="text-xl font-semibold">Mutual NDA Creator</h1>
+            <h1 className="text-xl font-semibold text-[#032147]">Mutual NDA Creator</h1>
             <p className="text-sm text-slate-600">
-              Fill in the key terms, review the agreement, and download it as a PDF.
+              Chat with the assistant to fill in the agreement, review it, and download it as a PDF.
             </p>
           </div>
           <button
@@ -87,8 +87,8 @@ export function NdaCreator({ standardTerms }: { standardTerms: StandardTerms }) 
       </header>
 
       <main className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-        <section aria-label="Agreement details" className="lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:self-start lg:overflow-y-auto">
-          <NdaFormFields form={form} onChange={setForm} />
+        <section aria-label="Drafting assistant" className="h-[70vh] lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:self-start">
+          <NdaChat form={form} onFormChange={setForm} />
         </section>
         <section aria-label="Agreement preview">
           <NdaPreview coverPage={coverPage} standardTerms={standardTerms} />

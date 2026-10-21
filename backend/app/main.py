@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, status
 from fastapi.staticfiles import StaticFiles
 
-from . import auth
+from . import auth, chat
 from .config import Settings
 from .db import init_db
 
@@ -27,6 +27,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"status": "ok"}
 
     app.include_router(auth.router)
+    app.include_router(chat.router)
 
     # Unknown API paths must return JSON, not fall through to the frontend.
     api_methods = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
