@@ -65,10 +65,9 @@ Implemented so far (Jira PL-2 → PL-5):
   - LLM client `backend/app/llm.py`: `complete_text` / `complete_structured` (Pydantic Structured Outputs) via LiteLLM → OpenRouter → Cerebras. `LLM_MODEL` overrides the model.
   - Settings via env (`backend/app/config.py`): `DATABASE_PATH`, `STATIC_DIR`, `SESSION_TTL_HOURS`, `COOKIE_SECURE`.
   - Docker, plus start/stop scripts for mac/linux/windows (they need `.env`). Tests: pytest (`uv run pytest` in `backend/`).
-
-- **AI chat for the Mutual NDA (PL-5):** the form is gone; `frontend/src/components/NdaChat.tsx` sits next to the live preview.
+- **AI chat for the Mutual NDA (PL-5):** the form is gone; `frontend/src/components/NdaChat.tsx` sits next to the live preview and calls the backend through `frontend/src/lib/nda-chat.ts` (the greeting is a static client-side message).
   - `POST /api/chat/nda` (`backend/app/chat.py`) is stateless and public: each turn the browser sends `{messages, form, today}` and gets `{reply, form}` (502 if the LLM fails, 422 for invalid input; max 40 messages of 4000 chars).
-  - `backend/app/documents/nda.py`: `NdaForm` (camelCase JSON, the single validator), the `NdaUpdates` / `NdaChatTurn` structured-output schemas, the system prompt, and `apply_updates`, which drops invalid LLM values instead of failing the turn.
+  - `backend/app/documents/nda.py`: `NdaForm` (camelCase JSON, the single validator), the `NdaUpdates` / `NdaChatTurn` structured-output schemas, the system prompt, and `apply_updates`, which drops invalid LLM values instead of failing the turn. The LLM gets and returns the effective date as `{year, month, day}` (`DateParts`), not an ISO string: as a string the model swapped day and month.
   - The `:free` MiniMax model is no longer served by Cerebras and its endpoint ignores `response_format`, so `complete_structured` also puts the JSON Schema in the prompt, extracts the JSON from the reply and retries once.
   - Tests: `test_nda.py`, `test_chat_api.py`, `nda-chat.test.ts`; live LLM check with `RUN_LIVE_LLM_TESTS=1 uv run pytest tests/test_chat_live.py` (needs the `.env` vars exported).
 
