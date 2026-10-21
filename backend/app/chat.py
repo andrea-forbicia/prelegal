@@ -13,6 +13,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field, model_validator
 
 from . import llm
+from .auth import CurrentUser
 from .documents import registry, selection
 from .documents.handlers import DocumentHandler, get_handler
 
@@ -75,9 +76,9 @@ class ChatResponse(BaseModel):
     document: Document | None
 
 
-# Public on purpose until the sign-in UI exists; then require `CurrentUser`.
+# Signed-in users only: every turn makes paid LLM calls.
 @router.post("")
-def chat(body: ChatRequest) -> ChatResponse:
+def chat(body: ChatRequest, _user: CurrentUser) -> ChatResponse:
     # A plain `def`: FastAPI runs it in a threadpool, so the blocking LLM calls
     # do not stall the event loop.
     history = [message.model_dump() for message in body.messages]

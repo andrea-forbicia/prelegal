@@ -13,7 +13,7 @@ def _tables(path) -> set[str]:
 def test_init_db_creates_schema(tmp_path):
     path = tmp_path / "nested" / "app.db"
     init_db(path)
-    assert {"users", "sessions"} <= _tables(path)
+    assert {"users", "sessions", "documents"} <= _tables(path)
 
 
 def test_init_db_starts_from_scratch(tmp_path):

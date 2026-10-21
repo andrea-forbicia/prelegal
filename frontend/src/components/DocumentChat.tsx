@@ -42,8 +42,8 @@ export function DocumentChat({ messages, pending, error, onSend }: Props) {
   }
 
   return (
-    <div className="flex h-full flex-col rounded-lg border border-slate-200 bg-white shadow-sm">
-      <h2 className="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-[#032147]">
+    <div className="flex h-full flex-col rounded-xl border border-slate-200 bg-white shadow-sm">
+      <h2 className="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-brand-navy">
         Drafting assistant
       </h2>
 
@@ -57,16 +57,27 @@ export function DocumentChat({ messages, pending, error, onSend }: Props) {
         {messages.map((message, index) => (
           <p
             key={index}
-            className={`max-w-[85%] whitespace-pre-wrap rounded-lg px-3 py-2 text-sm ${
+            className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
               message.role === "user"
-                ? "ml-auto bg-[#209dd7] text-white"
-                : "bg-slate-100 text-slate-800"
+                ? "ml-auto rounded-br-sm bg-brand-primary text-white"
+                : "rounded-bl-sm bg-slate-100 text-slate-800"
             }`}
           >
             {message.content}
           </p>
         ))}
-        {pending && <p className="text-sm text-[#888888]">Thinking…</p>}
+        {pending && (
+          <p role="status" className="flex w-fit items-center gap-1 rounded-2xl rounded-bl-sm bg-slate-100 px-4 py-3">
+            {[0, 150, 300].map((delay) => (
+              <span
+                key={delay}
+                className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-gray"
+                style={{ animationDelay: `${delay}ms` }}
+              />
+            ))}
+            <span className="sr-only">The assistant is typing…</span>
+          </p>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="border-t border-slate-200 p-3">
@@ -84,12 +95,12 @@ export function DocumentChat({ messages, pending, error, onSend }: Props) {
             onKeyDown={handleKeyDown}
             maxLength={MAX_MESSAGE_LENGTH}
             placeholder="Type your answer…"
-            className="block w-full resize-none rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+            className="block w-full resize-none rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"
           />
           <button
             type="submit"
             disabled={pending || !input.trim()}
-            className="rounded-md bg-[#753991] px-4 py-2 text-sm font-medium text-white hover:bg-[#5f2e76] disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-md bg-brand-secondary px-4 py-2 text-sm font-medium text-white hover:bg-brand-secondary-dark disabled:cursor-not-allowed disabled:opacity-60"
           >
             Send
           </button>

@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChatError, GREETING, sendChat, type ChatMessage } from "@/lib/chat";
 import { buildCoverPage, pdfFileName, todayIso, type NdaForm } from "@/lib/cover-page";
@@ -17,9 +19,18 @@ import {
   buildGenericCoverPage,
   genericPdfFileName,
 } from "@/lib/generic-cover-page";
+import {
+  createAutosaver,
+  createDocument,
+  getDocument,
+  updateDocument,
+  type SaveStatus,
+} from "@/lib/saved-documents";
+import { Disclaimer } from "./Disclaimer";
 import { DocumentChat } from "./DocumentChat";
 import { DocumentPreview } from "./DocumentPreview";
 import { NdaPreview } from "./NdaPreview";
+import { Alert, Button, Loading, Spinner, buttonClass } from "./ui";
 
 /** Everything the preview and the PDF need for the current draft. */
 function buildView(catalog: Catalog, draft: Draft | null) {
@@ -29,6 +40,7 @@ function buildView(catalog: Catalog, draft: Draft | null) {
     const form = draft.form as NdaForm;
     return {
       kind: "nda" as const,
+      name: spec.name,
       coverPage: buildCoverPage(form),
       standardTerms: catalog.ndaTerms,
       fileName: pdfFileName(form),
@@ -38,6 +50,7 @@ function buildView(catalog: Catalog, draft: Draft | null) {
   const terms = catalog.terms[spec.id];
   return {
     kind: "generic" as const,
+    name: spec.name,
     coverPage: buildGenericCoverPage(spec, form),
     terms,
     footer: terms.footer.length ? terms.footer : attribution(spec),
@@ -45,17 +58,93 @@ function buildView(catalog: Catalog, draft: Draft | null) {
   };
 }
 
+const SAVE_STATUS_TEXT: Record<SaveStatus, string> = {
+  idle: "",
+  saving: "Saving…",
+  saved: "Saved",
+  error: "Couldn't save. Will retry on your next change.",
+};
+
 export function DocumentCreator({ catalog }: { catalog: Catalog }) {
+  const idParam = useSearchParams().get("id");
   const [draft, setDraft] = useState<Draft | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
   const [pending, setPending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const requestRef = useRef<AbortController | null>(null);
 
+  const [saver] = useState(() =>
+    createAutosaver({
+      create: createDocument,
+      update: updateDocument,
+      onStatus: setSaveStatus,
+      // Put the new document's id in the URL, so a reload reopens it. Not if
+      // the user has left the editor while the first save was running.
+      onSaved: (id) => {
+        const url = new URL(window.location.href);
+        if (url.pathname === "/" && url.searchParams.get("id") !== String(id)) {
+          window.history.replaceState(null, "", `/?id=${id}`);
+        }
+      },
+    }),
+  );
+
   // Abort an in-flight turn when the page unmounts.
   useEffect(() => () => requestRef.current?.abort(), []);
+
+  // Open the saved document in ?id=, or start afresh when it goes away
+  // ("New document"). The autosaver's own URL update is not a change.
+  useEffect(() => {
+    setLoading(false);
+    setLoadError(null);
+    const id = idParam === null ? null : Number(idParam);
+    if (id !== null && id === saver.id) return;
+
+    function startFresh() {
+      saver.reset();
+      setDraft(null);
+      setMessages([GREETING]);
+    }
+
+    requestRef.current?.abort();
+    setPending(false);
+    setChatError(null);
+    if (id === null) {
+      startFresh();
+      return;
+    }
+    const notFound = "We couldn't open that document. It may have been deleted.";
+    if (!Number.isInteger(id) || id < 1) {
+      startFresh();
+      setLoadError(notFound);
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+    getDocument(id)
+      .then((saved) => {
+        if (cancelled) return;
+        saver.open(saved.id);
+        setDraft(saved.document);
+        setMessages(saved.messages.length ? saved.messages : [GREETING]);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error(err);
+        startFresh();
+        setLoadError(notFound);
+      })
+      .finally(() => !cancelled && setLoading(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [idParam, saver]);
 
   const view = useMemo(() => buildView(catalog, draft), [catalog, draft]);
 
@@ -68,8 +157,11 @@ export function DocumentCreator({ catalog }: { catalog: Catalog }) {
     setChatError(null);
     try {
       const turn = await sendChat(history, draft, todayIso(), controller.signal);
-      setMessages([...history, { role: "assistant", content: turn.reply }]);
+      const updated: ChatMessage[] = [...history, { role: "assistant", content: turn.reply }];
+      setMessages(updated);
       setDraft(turn.document);
+      // Nothing to save until a document is chosen.
+      if (turn.document) saver.save({ document: turn.document, messages: updated });
       return true;
     } catch (err) {
       if (controller.signal.aborted) return true;
@@ -78,17 +170,20 @@ export function DocumentCreator({ catalog }: { catalog: Catalog }) {
       setChatError(err instanceof ChatError ? err.message : "Something went wrong. Please try again.");
       return false;
     } finally {
-      setPending(false);
+      if (!controller.signal.aborted) setPending(false);
     }
   }
 
   /** Picking from the list needs no LLM call: the next chat turn sends the new draft. */
   function choose(spec: DocumentSpec) {
     // A turn in flight would overwrite the choice when it returns.
-    if (pending || spec.id === draft?.id) return;
+    if (pending || loading || spec.id === draft?.id) return;
     // As when the assistant switches documents, the parties carry over.
-    setDraft(newDraft(spec, todayIso(), draft?.form.parties));
-    setMessages((current) => [...current, { role: "assistant", content: startMessage(spec) }]);
+    const next = newDraft(spec, todayIso(), draft?.form.parties);
+    const updated: ChatMessage[] = [...messages, { role: "assistant", content: startMessage(spec) }];
+    setDraft(next);
+    setMessages(updated);
+    saver.save({ document: next, messages: updated });
   }
 
   async function handleDownload() {
@@ -130,58 +225,63 @@ export function DocumentCreator({ catalog }: { catalog: Catalog }) {
     }
   }
 
-  return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <div>
-            <h1 className="text-xl font-semibold text-[#032147]">Prelegal</h1>
-            <p className="text-sm text-slate-600">
-              Chat with the assistant to draft an agreement, review it, and download it as a PDF.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <select
-              aria-label="Document"
-              value={draft?.id ?? ""}
-              disabled={pending}
-              onChange={(event) => {
-                const spec = findSpec(catalog.documents, event.target.value);
-                if (spec) choose(spec);
-              }}
-              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-[#209dd7] focus:outline-none focus:ring-1 focus:ring-[#209dd7] disabled:opacity-60"
-            >
-              <option value="" disabled>
-                Choose a document…
-              </option>
-              {catalog.documents.map((spec) => (
-                <option key={spec.id} value={spec.id}>
-                  {spec.name}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={handleDownload}
-              disabled={!view || downloading}
-              className="rounded-md bg-[#753991] px-4 py-2 text-sm font-medium text-white hover:bg-[#5f2e76] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {downloading ? "Generating PDF…" : "Download PDF"}
-            </button>
-          </div>
-        </div>
-        {downloadError && (
-          <p role="alert" className="mx-auto max-w-7xl px-4 pb-3 text-sm text-red-700 sm:px-6">
-            {downloadError}
-          </p>
-        )}
-      </header>
+  if (loading) return <Loading label="Opening your document…" />;
 
-      <main className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-        <section aria-label="Drafting assistant" className="h-[70vh] lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:self-start">
-          <DocumentChat messages={messages} pending={pending} error={chatError} onSend={handleSend} />
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="truncate text-xl font-semibold text-brand-navy">{view?.name ?? "New document"}</h1>
+          <p aria-live="polite" className={`text-xs ${saveStatus === "error" ? "text-red-700" : "text-slate-600"}`}>
+            {view ? SAVE_STATUS_TEXT[saveStatus] || "Saved automatically as you go" : "Choose a document or describe what you need"}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            aria-label="Document"
+            value={draft?.id ?? ""}
+            disabled={pending}
+            onChange={(event) => {
+              const spec = findSpec(catalog.documents, event.target.value);
+              if (spec) choose(spec);
+            }}
+            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-60"
+          >
+            <option value="" disabled>
+              Choose a document…
+            </option>
+            {catalog.documents.map((spec) => (
+              <option key={spec.id} value={spec.id}>
+                {spec.name}
+              </option>
+            ))}
+          </select>
+          <Button onClick={handleDownload} disabled={!view || downloading}>
+            {downloading ? <Spinner /> : <DownloadIcon />}
+            {downloading ? "Generating PDF…" : "Download PDF"}
+          </Button>
+        </div>
+      </div>
+
+      {loadError && (
+        <Alert action={<Link href="/documents/" className={buttonClass("secondary")}>My documents</Link>}>
+          {loadError}
+        </Alert>
+      )}
+      {downloadError && <Alert>{downloadError}</Alert>}
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+        <section
+          aria-label="Drafting assistant"
+          className="flex h-[70vh] flex-col gap-2 lg:sticky lg:top-24 lg:h-[calc(100vh-8rem)] lg:self-start"
+        >
+          <div className="min-h-0 flex-1">
+            <DocumentChat messages={messages} pending={pending} error={chatError} onSend={handleSend} />
+          </div>
+          <Disclaimer variant="note" />
         </section>
-        <section aria-label="Agreement preview">
+        <section aria-label="Agreement preview" className="space-y-4">
+          {view && <Disclaimer variant="box" />}
           {view?.kind === "nda" && (
             <NdaPreview coverPage={view.coverPage} standardTerms={view.standardTerms} />
           )}
@@ -192,8 +292,17 @@ export function DocumentCreator({ catalog }: { catalog: Catalog }) {
             <DocumentChooser documents={catalog.documents} disabled={pending} onChoose={choose} />
           )}
         </section>
-      </main>
+      </div>
     </div>
+  );
+}
+
+function DownloadIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+      <path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.69L6.28 8.47a.75.75 0 0 0-1.06 1.06l4.25 4.25a.75.75 0 0 0 1.06 0l4.25-4.25a.75.75 0 1 0-1.06-1.06l-2.97 2.97V2.75Z" />
+      <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+    </svg>
   );
 }
 
@@ -208,9 +317,9 @@ function DocumentChooser({
   onChoose: (spec: DocumentSpec) => void;
 }) {
   return (
-    <div className="rounded-lg bg-white px-6 py-8 shadow-sm ring-1 ring-slate-200">
-      <h2 className="text-lg font-semibold text-[#032147]">What would you like to draft?</h2>
-      <p className="mt-1 text-sm text-[#888888]">
+    <div className="rounded-xl border border-slate-200 bg-white px-6 py-8 shadow-sm">
+      <h2 className="text-lg font-semibold text-brand-navy">What would you like to draft?</h2>
+      <p className="mt-1 text-sm text-brand-gray">
         Describe your situation in the chat, or pick a document. The preview will appear here.
       </p>
       <ul className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -220,9 +329,9 @@ function DocumentChooser({
               type="button"
               onClick={() => onChoose(spec)}
               disabled={disabled}
-              className="h-full w-full rounded-md border border-slate-200 p-4 text-left hover:border-[#209dd7] hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-[#209dd7] disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-full w-full rounded-lg border border-slate-200 p-4 text-left transition-colors hover:border-brand-primary hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <span className="block font-medium text-[#032147]">{spec.name}</span>
+              <span className="block font-medium text-brand-navy">{spec.name}</span>
               <span className="mt-1 block text-sm text-slate-600">{spec.summary}</span>
             </button>
           </li>

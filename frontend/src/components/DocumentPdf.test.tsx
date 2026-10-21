@@ -30,5 +30,6 @@ describe("DocumentPdf", async () => {
     const raw = buffer.toString("latin1");
     expect(raw).toMatch(/NotoSerif/);
     expect(raw).not.toMatch(/\/BaseFont \/(Times|Helvetica)/);
-  });
+    // Laying out a long agreement takes a few seconds on a slow machine.
+  }, 20_000);
 });

@@ -14,6 +14,11 @@ pytestmark = pytest.mark.skipif(
 GREETING = {"role": "assistant", "content": "Hi! What would you like to draft?"}
 
 
+@pytest.fixture(autouse=True)
+def _signed_in(signed_up_client):
+    """The chat is for signed-in users: sign up on the test's ``client`` first."""
+
+
 def _chat(client, text: str, document: dict | None = None) -> dict:
     request = {
         "messages": [GREETING, {"role": "user", "content": text}],

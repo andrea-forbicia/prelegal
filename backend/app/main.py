@@ -6,8 +6,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, status
 from fastapi.staticfiles import StaticFiles
 
-from . import auth, chat
+from . import auth, chat, saved
 from .config import Settings
+from .csrf import add_origin_check
 from .db import init_db
 
 
@@ -21,6 +22,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title="Prelegal", lifespan=lifespan)
     app.state.settings = settings
+    add_origin_check(app, settings)
 
     @app.get("/api/health", tags=["health"])
     def health() -> dict[str, str]:
@@ -28,6 +30,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(auth.router)
     app.include_router(chat.router)
+    app.include_router(saved.router)
 
     # Unknown API paths must return JSON, not fall through to the frontend.
     api_methods = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]

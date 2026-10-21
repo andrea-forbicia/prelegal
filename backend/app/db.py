@@ -22,6 +22,20 @@ CREATE TABLE sessions (
 );
 
 CREATE INDEX idx_sessions_user ON sessions(user_id);
+
+-- A user's saved drafts: the document id in documents.json, its form and the
+-- chat that produced it, so the user can reopen it and keep chatting.
+CREATE TABLE documents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    document_id TEXT NOT NULL,
+    form TEXT NOT NULL,
+    messages TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);
+
+CREATE INDEX idx_documents_user ON documents(user_id, updated_at);
 """
 
 
