@@ -1,0 +1,14 @@
+services:
+  prelegal:
+    build: .
+    image: prelegal
+    container_name: prelegal
+    ports:
+      - "8000:8000"
+    env_file: .env
+    # No volume: the SQLite database starts empty every time the container is created.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
