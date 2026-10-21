@@ -137,3 +137,21 @@ def test_system_prompt_contains_date_and_form():
     assert '"company": "Acme $today"' in prompt  # user text is not substituted
     assert '"party2": {' in prompt
     assert "language of the user's latest message" in prompt
+
+
+def test_new_form_matches_the_frontend_defaults():
+    form = nda.new_form(date(2026, 10, 21))
+    assert form.purpose == nda.DEFAULT_PURPOSE
+    assert form.effective_date == "2026-10-21"
+    assert form.parties == [nda.Party(), nda.Party()]
+
+
+def test_system_prompt_offers_the_other_documents():
+    prompt = nda.build_system_prompt(_form(), date(2026, 10, 21), catalog='  - "csa": CSA')
+
+    assert '  - "csa": CSA' in prompt
+    assert "set switch_to to its id" in prompt
+    assert "The user has just chosen this document." not in prompt
+    assert "The user has just chosen this document." in nda.build_system_prompt(
+        _form(), date(2026, 10, 21), announce=True
+    )

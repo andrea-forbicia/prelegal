@@ -1,4 +1,5 @@
-# Build context is the repository root: the frontend build reads ../templates.
+# Build context is the repository root: the frontend build reads ../templates and
+# ../documents.json.
 
 # Stage 1: build the Next.js frontend as a static export (frontend/out).
 FROM node:24-alpine AS frontend
@@ -7,6 +8,7 @@ COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ ./
 COPY templates/ /build/templates/
+COPY documents.json /build/documents.json
 RUN npm run build
 
 # Stage 2: FastAPI backend serving the API and the static frontend.
@@ -18,6 +20,7 @@ COPY backend/pyproject.toml backend/uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 COPY backend/app ./app
 COPY catalog.json ./catalog.json
+COPY documents.json ./documents.json
 COPY templates/ ./templates/
 COPY --from=frontend /build/frontend/out ./static
 

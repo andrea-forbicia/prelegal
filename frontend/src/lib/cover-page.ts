@@ -57,8 +57,9 @@ export const COVER_PAGE_INTRO: Inline[] = parseInline(
 export const COVER_PAGE_SIGNING_STATEMENT =
   "By signing this Cover Page, each party agrees to enter into this MNDA as of the Effective Date.";
 
-const emptyParty: Party = { company: "", name: "", title: "", noticeAddress: "" };
+export const emptyParty: Party = { company: "", name: "", title: "", noticeAddress: "" };
 
+// Mirrored by nda.new_form in backend/app/documents/nda.py.
 export function defaultNdaForm(effectiveDate = ""): NdaForm {
   return {
     purpose:
@@ -100,9 +101,37 @@ export function formatYears(years: number): string {
   return years === 1 ? "1 year" : `${years} years`;
 }
 
-function value(text: string, placeholder: string): Value {
+export function value(text: string, placeholder: string): Value {
   const trimmed = text.trim();
   return trimmed ? { text: trimmed, filled: true } : { text: placeholder, filled: false };
+}
+
+/** The signature table; Signature and Date are left blank for signing. */
+export function signatureRows(parties: [Party, Party]): SignatureRow[] {
+  const partyRow = (
+    label: string,
+    field: keyof Party,
+    placeholder: string,
+    hint?: string,
+  ): SignatureRow => ({
+    label,
+    hint,
+    values: [value(parties[0][field], placeholder), value(parties[1][field], placeholder)],
+  });
+
+  return [
+    { label: "Signature", values: [null, null] },
+    partyRow("Print Name", "name", "[Name]"),
+    partyRow("Title", "title", "[Title]"),
+    partyRow("Company", "company", "[Company]"),
+    partyRow(
+      "Notice Address",
+      "noticeAddress",
+      "[Email or postal address]",
+      "Use either email or postal address",
+    ),
+    { label: "Date", values: [null, null] },
+  ];
 }
 
 export function buildCoverPage(form: NdaForm): CoverPage {
@@ -117,20 +146,6 @@ export function buildCoverPage(form: NdaForm): CoverPage {
     form.confidentialityTerm === "years"
       ? `${formatYears(form.confidentialityYears)} from Effective Date, but in the case of trade secrets until Confidential Information is no longer considered a trade secret under applicable laws.`
       : "In perpetuity.";
-
-  const partyRow = (
-    label: string,
-    field: keyof Party,
-    placeholder: string,
-    hint?: string,
-  ): SignatureRow => ({
-    label,
-    hint,
-    values: [
-      value(form.parties[0][field], placeholder),
-      value(form.parties[1][field], placeholder),
-    ],
-  });
 
   return {
     sections: [
@@ -169,26 +184,14 @@ export function buildCoverPage(form: NdaForm): CoverPage {
         lines: [{ value: { text: form.modifications.trim() || "None.", filled: true } }],
       },
     ],
-    signatureRows: [
-      { label: "Signature", values: [null, null] },
-      partyRow("Print Name", "name", "[Name]"),
-      partyRow("Title", "title", "[Title]"),
-      partyRow("Company", "company", "[Company]"),
-      partyRow(
-        "Notice Address",
-        "noticeAddress",
-        "[Email or postal address]",
-        "Use either email or postal address",
-      ),
-      { label: "Date", values: [null, null] },
-    ],
+    signatureRows: signatureRows(form.parties),
   };
 }
 
 /** e.g. `Mutual-NDA-Acme-Inc-Globex.pdf`. */
-export function pdfFileName(form: NdaForm): string {
+export function pdfFileName(form: { parties: Party[] }, base = "Mutual-NDA"): string {
   const slug = (text: string) =>
     text.trim().replace(/[^A-Za-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   const companies = form.parties.map((p) => slug(p.company)).filter(Boolean);
-  return ["Mutual-NDA", ...companies].join("-") + ".pdf";
+  return [base, ...companies].join("-") + ".pdf";
 }
