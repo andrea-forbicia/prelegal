@@ -57,7 +57,9 @@ Backend available at http://localhost:8000/
 
 ## Current status (as of 2026-10-21)
 
-Implemented so far (Jira PL-2 → PL-7):
+All Jira tickets (PL-2 → PL-7) are done and merged into `main` (last: PR #11); there are no open tickets.
+
+Implemented so far:
 - **Templates (PL-2):** 12 Common Paper templates in `templates/`, indexed by `catalog.json`.
 - **Mutual NDA Creator (PL-3):** Next.js UI (`NdaPreview.tsx` / `NdaPdf.tsx` in `frontend/src/components`) with a form (replaced by AI chat in PL-5), live preview and PDF download (`@react-pdf/renderer`, Noto fonts in `frontend/public/fonts`). The standard terms are read from `templates/Mutual-NDA.md` at build time. Tests: Vitest (`npm test`).
 - **V1 foundation (PL-4):**
@@ -67,7 +69,7 @@ Implemented so far (Jira PL-2 → PL-7):
   - Settings via env (`backend/app/config.py`): `DATABASE_PATH`, `STATIC_DIR`, `SESSION_TTL_HOURS`, `COOKIE_SECURE`, `ALLOWED_ORIGINS` (PL-7).
   - Docker, plus start/stop scripts for mac/linux/windows (they need `.env`). Tests: pytest (`uv run pytest` in `backend/`).
 - **AI chat for the Mutual NDA (PL-5):** the form was replaced by an AI chat next to the live preview (generalized in PL-6).
-  - `backend/app/documents/nda.py`: `NdaForm` (camelCase JSON, the single validator), the `NdaUpdates` / `NdaChatTurn` structured-output schemas, the system prompt, and `apply_updates`, which drops invalid LLM values instead of failing the turn. The LLM gets and returns the effective date as `{year, month, day}` (`DateParts`), not an ISO string: as a string the model swapped day and month.
+  - `backend/app/documents/nda.py`: `NdaForm` (camelCase JSON, the single validator), the `NdaUpdates` / `NdaChatTurn` structured-output schemas, the system prompt, and `apply_updates` (since PL-6 a thin wrapper around `common.merge_updates`), which drops invalid LLM values instead of failing the turn. The LLM gets and returns the effective date as `{year, month, day}` (`DateParts`), not an ISO string: as a string the model swapped day and month.
   - The `:free` MiniMax model is no longer served by Cerebras and its endpoint ignores `response_format`, so `complete_structured` also puts the JSON Schema in the prompt, extracts the JSON from the reply and retries once.
 - **All document types (PL-6):**
   - `POST /api/chat` (`backend/app/chat.py`) is stateless and, since PL-7, for signed-in users only: each turn the browser sends `{messages, document, today}`, where `document` is `{id, form}` or null before one is chosen, and gets `{reply, document}` (502 if the LLM fails, 422 for invalid input or an unknown id; max 40 messages of 4000 chars). `/api/chat/nda` is gone.
@@ -75,13 +77,21 @@ Implemented so far (Jira PL-2 → PL-7):
   - `backend/app/documents/`: `common.py` (shared models such as `Party` and `DateParts`, `merge_updates`, which drops invalid LLM values instead of failing the turn, and shared prompt text), `nda.py` (the NDA's own `NdaForm`, schemas and prompt), `generic.py` (the other 10 documents: form, update and turn models built with `create_model` from `documents.json`), `registry.py` (loads `documents.json`, tolerant `resolve_id`), `handlers.py` (one interface over both for `chat.py`).
   - Frontend: `DocumentCreator.tsx` (state, document dropdown, chooser cards, PDF download), `DocumentChat.tsx`, `lib/chat.ts` (client; static greeting). The NDA keeps `NdaPreview` / `NdaPdf`; the others use `DocumentPreview` / `DocumentPdf` with a generated Cover Page (`lib/generic-cover-page.ts`, adds the CC BY 4.0 attribution) and their Standard Terms parsed at build time by `lib/terms-parser.ts` (nested 1. / 1.1 / (a) / (i) lists; throws on unknown markup).
   - Tests: `test_chat_api.py`, `test_generic.py`, `test_registry.py` (also checks that every template variable is a field or a party), `test_nda.py`; `chat.test.ts`, `documents.test.ts`, `terms-parser.test.ts` (parses all 10 templates without losing text), `DocumentPdf.test.tsx`. Live LLM check with `RUN_LIVE_LLM_TESTS=1 uv run pytest tests/test_chat_live.py` (needs the `.env` vars exported).
-  - Known limit: the free model now and then leaves a field value untranslated or asks to confirm a document instead of picking it.
 - **Users, saved documents and polish (PL-7):**
-  - `/login/` (`AuthForm.tsx`: sign in and create account tabs) on the PL-4 auth API. `AuthProvider` checks `GET /api/auth/me` once; `AuthGate` sends signed-out users to `/login/`; any 401 from `lib/api.ts` (`apiFetch`) or `lib/chat.ts` signs the user out of the UI.
-  - Saved documents: `documents` table and `backend/app/saved.py` (`GET/POST /api/documents`, `GET/PUT/DELETE /api/documents/{id}`, scoped to the user, 404 for others' rows). A row holds the draft (`{id, form}`, validated like a chat request) and its conversation (max 200 messages; max 100 documents per user); the list's name and companies come from the registry and the form. The editor autosaves after every chat turn and document pick (`createAutosaver` in `lib/saved-documents.ts`: one save at a time, latest change wins, the first save creates) and puts `?id=` in the URL; `/?id=N` reopens a document and `/` starts a new one. `/documents/` lists, opens and deletes them.
-  - CSRF: `backend/app/csrf.py` rejects non-GET `/api` requests whose `Origin` is neither the app's own host nor in `ALLOWED_ORIGINS` (default: the Next dev server on :3000).
-  - UI: `AppShell` (logo, "New document" / "My documents", account menu, footer), shared `ui.tsx` (Button, Field, Alert, Loading, Logo), brand colors as Tailwind tokens in `globals.css` (`bg-brand-navy`, `text-brand-gray`, ...). The draft disclaimer (`lib/disclaimer.ts`) is under the chat, above the preview and at the foot of every PDF page.
-  - Tests: `test_saved_api.py`, `test_csrf.py`, chat tests now sign in; `api.test.ts`, `auth.test.ts`, `saved-documents.test.ts` (autosaver ordering).
+  - `/login/` (`AuthForm.tsx`: "Sign in" / "Create account" toggle, confirm password, errors tied to the fields) on the PL-4 auth API. `AuthProvider` (in `layout.tsx`) checks `GET /api/auth/me` once; `AppShell` wraps every signed-in page and includes `AuthGate`, which sends signed-out users to `/login/`; any 401 from `lib/api.ts` (`apiFetch`) or `lib/chat.ts` signs the user out of the UI.
+  - Saved documents: `documents` table and `backend/app/saved.py` (`GET/POST /api/documents`, `GET/PUT/DELETE /api/documents/{id}`, scoped to the user, 404 for others' rows). A row holds the draft (`{id, form}`, validated like a chat request) and its conversation (max 200 messages; max 100 documents per user, then 409; ids outside SQLite's 64-bit range give 422); the list's name and companies come from the registry and the form. The editor autosaves after every chat turn and document pick (`createAutosaver` in `lib/saved-documents.ts`: one save at a time, latest change wins, the first save creates, and a document deleted meanwhile is saved again as a new one) and puts `?id=` in the URL; `/?id=N` reopens a document and `/` starts a new one. `/documents/` lists, opens and deletes them.
+  - CSRF: `backend/app/csrf.py` rejects non-GET `/api` requests whose `Origin` is neither the app's own host nor in `ALLOWED_ORIGINS` (default: the Next dev server on :3000). A missing Origin is allowed; `null` and malformed ones are rejected.
+  - UI: `AppShell` (logo, "New document" / "My documents", account menu, footer), shared `ui.tsx` (Button, Field, Alert, Loading, Logo), brand colors as Tailwind tokens in `globals.css` (`bg-brand-navy`, `text-brand-gray`, ...; small legal and status text uses `text-slate-600`, as `#888888` is too light for WCAG AA). The draft disclaimer (`lib/disclaimer.ts`) is under the chat, above the preview and at the foot of every PDF page.
+  - Tests: `test_saved_api.py`, `test_csrf.py`, chat tests now sign in (autouse `_signed_in` fixture); `api.test.ts`, `auth.test.ts`, `saved-documents.test.ts` (autosaver ordering). The PDF render tests allow 20 s.
+
+Testing and development:
+- Backend: `uv run pytest` in `backend/` (about 170 tests; the live LLM tests are skipped unless `RUN_LIVE_LLM_TESTS=1`). Frontend: `npm test`, `npm run lint`, `npm run build` in `frontend/` (about 105 tests).
+- Local dev without Docker: run the backend (`uv run uvicorn app.main:create_app --factory`, with the `.env` vars exported) and `npm run dev`; Next proxies `/api` to `BACKEND_URL` (default http://localhost:8000).
+
+Known issues and open points:
+- The signed-in screens (editor autosave and `?id=`, My documents, account menu, PDF footer, mobile layout) were checked through the API and tests but not yet by hand in a browser.
+- The Docker image is about 1 GB, 607 MB of it the Python dependencies (mostly LiteLLM). A build without cache took over 20 minutes on Docker Desktop for Windows, even though the dependencies had not changed since PL-4. Possible fixes: BuildKit cache mounts for uv and npm, and dropping `UV_COMPILE_BYTECODE`.
+- The free model now and then leaves a field value untranslated or asks to confirm a document instead of picking it.
 
 Not yet implemented:
 - Persistent storage (the database is still recreated on every start, by design) and rate limiting.
